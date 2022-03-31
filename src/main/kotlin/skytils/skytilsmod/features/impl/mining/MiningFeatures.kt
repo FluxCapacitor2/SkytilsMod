@@ -386,10 +386,10 @@ class MiningFeatures {
             val stack = UMatrixStack()
             stack.scale(0.1, 0.1, 1.0)
             UGraphics.disableLighting()
-            RenderUtil.renderTexture(mapLocation, 0, 0, 624, 624, false)
+            RenderUtil.renderTexture(mapLocation, 0, 0, 624, 624, false, stack)
             if (Skytils.config.crystalHollowMapPlaces) {
                 Locations.values().forEach {
-                    it.loc.drawOnMap(it.size, it.color)
+                    it.loc.drawOnMap(stack, it.size, it.color)
                 }
             }
             val x = (mc.thePlayer.posX - 202).coerceIn(0.0, 624.0)
@@ -484,9 +484,9 @@ class MiningFeatures {
                 RenderUtil.renderWaypointText(text, locX!! + 200, locY!!, locZ!! + 200, partialTicks)
         }
 
-        fun drawOnMap(size: Int, color: Int) {
+        fun drawOnMap(matrixStack: UMatrixStack, size: Int, color: Int) {
             if (exists())
-                RenderUtil.drawRect(locX!! - size, locZ!! - size, locX!! + size, locZ!! + size, color)
+                RenderUtil.drawRect(locX!! - size, locZ!! - size, locX!! + size, locZ!! + size, color, matrixStack)
         }
 
         override fun toString(): String {

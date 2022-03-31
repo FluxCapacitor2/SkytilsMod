@@ -17,6 +17,8 @@
  */
 package skytils.skytilsmod.utils
 
+import gg.essential.universal.UGraphics
+import gg.essential.universal.UMatrixStack
 import gg.essential.universal.UResolution
 import net.minecraft.client.gui.Gui
 import net.minecraft.client.renderer.GlStateManager
@@ -275,8 +277,37 @@ object RenderUtil {
         y: Int,
         width: Int = 16,
         height: Int = 16,
-        enableLighting: Boolean = true
+        enableLighting: Boolean = true,
+        matrixStack: UMatrixStack? = null
     ) {
+        if(matrixStack != null) {
+            UGraphics.enableBlend()
+            UGraphics.enableDepth()
+            UGraphics.tryBlendFuncSeparate(770, 771, 1, 0)
+            matrixStack.push()
+
+            UGraphics.bindTexture(0, texture)
+            UGraphics.enableAlpha()
+            UGraphics.enableBlend()
+            UGraphics.color4f(1f, 1f, 1f, 1f)
+
+            val w: Float = 1.0f / width
+            val h: Float = 1.0f / height
+            val tessellator = UGraphics.getTessellator()
+            val worldRenderer = UGraphics.getFromTessellator()
+            worldRenderer.beginWithDefaultShader(UGraphics.DrawMode.QUADS, DefaultVertexFormats.POSITION_TEX)
+            worldRenderer.pos(matrixStack, x.toDouble(), (y + height).toDouble(), 0.0).tex(0.0, height.toDouble() * h).endVertex()
+            worldRenderer.pos(matrixStack, (x + width).toDouble(), (y + height).toDouble(), 0.0).tex(width.toDouble() * w, height.toDouble() * h).endVertex()
+            worldRenderer.pos(matrixStack, (x + width).toDouble(), y.toDouble(), 0.0).tex((width.toFloat() * w).toDouble(), 0.0).endVertex()
+            worldRenderer.pos(matrixStack, x.toDouble(), y.toDouble(), 0.0).tex(0.0, 0.0).endVertex()
+            tessellator.draw()
+
+            UGraphics.disableBlend()
+            UGraphics.disableAlpha()
+            UGraphics.disableLighting()
+            matrixStack.pop()
+            return
+        }
         if (enableLighting) RenderHelper.enableGUIStandardItemLighting()
         GlStateManager.enableRescaleNormal()
         GlStateManager.enableBlend()
@@ -620,7 +651,7 @@ object RenderUtil {
      *
      * Draws a solid color rectangle with the specified coordinates and color (ARGB format). Args: x1, y1, x2, y2, color
      */
-    fun drawRect(left: Double, top: Double, right: Double, bottom: Double, color: Int) {
+    fun drawRect(left: Double, top: Double, right: Double, bottom: Double, color: Int, matrixStack: UMatrixStack? = null) {
         var leftModifiable = left
         var topModifiable = top
         var rightModifiable = right
@@ -639,20 +670,34 @@ object RenderUtil {
         val f = (color shr 16 and 255).toFloat() / 255.0f
         val f1 = (color shr 8 and 255).toFloat() / 255.0f
         val f2 = (color and 255).toFloat() / 255.0f
-        GlStateManager.color(f, f1, f2, f3)
-        val tessellator = Tessellator.getInstance()
-        val worldRenderer = tessellator.worldRenderer
-        GlStateManager.enableBlend()
-        GlStateManager.disableTexture2D()
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0)
-        worldRenderer.begin(7, DefaultVertexFormats.POSITION)
-        worldRenderer.pos(leftModifiable, bottomModifiable, 0.0).endVertex()
-        worldRenderer.pos(rightModifiable, bottomModifiable, 0.0).endVertex()
-        worldRenderer.pos(rightModifiable, topModifiable, 0.0).endVertex()
-        worldRenderer.pos(leftModifiable, topModifiable, 0.0).endVertex()
-        tessellator.draw()
-        GlStateManager.enableTexture2D()
-        GlStateManager.disableBlend()
+        if(matrixStack == null) {
+            GlStateManager.color(f, f1, f2, f3)
+            val tessellator = Tessellator.getInstance()
+            val worldRenderer = tessellator.worldRenderer
+            GlStateManager.enableBlend()
+            GlStateManager.disableTexture2D()
+            GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0)
+            worldRenderer.begin(7, DefaultVertexFormats.POSITION)
+            worldRenderer.pos(leftModifiable, bottomModifiable, 0.0).endVertex()
+            worldRenderer.pos(rightModifiable, bottomModifiable, 0.0).endVertex()
+            worldRenderer.pos(rightModifiable, topModifiable, 0.0).endVertex()
+            worldRenderer.pos(leftModifiable, topModifiable, 0.0).endVertex()
+            tessellator.draw()
+            GlStateManager.enableTexture2D()
+            GlStateManager.disableBlend()
+        } else {
+            val worldRenderer = UGraphics.getFromTessellator()
+            UGraphics.color4f(f, f1, f2, f3)
+            UGraphics.enableBlend()
+            worldRenderer.beginWithDefaultShader(UGraphics.DrawMode.QUADS, DefaultVertexFormats.POSITION)
+            UGraphics.tryBlendFuncSeparate(770, 771, 1, 0)
+            worldRenderer.pos(matrixStack, leftModifiable, bottomModifiable, 0.0).endVertex()
+            worldRenderer.pos(matrixStack, rightModifiable, bottomModifiable, 0.0).endVertex()
+            worldRenderer.pos(matrixStack, rightModifiable, topModifiable, 0.0).endVertex()
+            worldRenderer.pos(matrixStack, leftModifiable, topModifiable, 0.0).endVertex()
+            worldRenderer.drawDirect()
+            UGraphics.disableBlend()
+        }
     }
 
     /**
